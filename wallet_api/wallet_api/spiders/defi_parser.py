@@ -1,13 +1,12 @@
 import scrapy
 from scrapy.selector import Selector
-import re
 import os
 import pandas as pd
 import json
+import logging
 
 class DefiParserSpider(scrapy.Spider):
     name = "defi_parser"
-    start_urls = ['https://solscan.io/']
     headers = {
         "Host": "api-v2.solscan.io",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
@@ -25,22 +24,25 @@ class DefiParserSpider(scrapy.Spider):
         "Cache-Control": "no-cache",
         "TE": "trailers"
     }
-    url = "https://api-v2.solscan.io/v2/account/activity/dextrading?address=CuvaikSrjiwvsBs8W51oRomA3vgjQdgSVxFgXLyhnKq5&page=1&page_size=100"
     
-    def __init__(self, address='', output_dir='', filename='output.csv', url=None, *args, **kwargs):
+    def __init__(self, address='', output_dir='', filename='output.csv', custom_url='', *args, **kwargs):
         super(DefiParserSpider, self).__init__(*args, **kwargs)
         self.address = address
-        self.start_url = url
-        self.path = os.path.join(output_dir , filename)
+        self.base_url = custom_url
+        self.path = os.path.join(output_dir, filename)
+        self.page = 1
+        self.total_transactions = 0
+        self.max_transactions = 1000  # Maximum de transactions à récupérer
 
     def start_requests(self):
-        yield scrapy.Request(url=self.url,callback=self.parse, headers=self.headers)
-
+        yield scrapy.Request(url=self.base_url.format(page=self.page), callback=self.parse, headers=self.headers)
 
     def parse(self, response):
         raw_data = response.body
         data = json.loads(raw_data)
+        transactions = data.get('data', [])
 
+        # Create a DataFrame from the transactions
         df = pd.DataFrame([{
             "block_id": tx["block_id"],
             "trans_id": tx["trans_id"],
@@ -51,5 +53,26 @@ class DefiParserSpider(scrapy.Spider):
             "decimal2": tx["amount_info"]["token2_decimals"],
             "amount1": tx["amount_info"]["amount1"],
             "amount2": tx["amount_info"]["amount2"]
-        } for tx in data['data']])
-        df.to_csv(path_or_buf = self.path)
+        } for tx in transactions])
+
+        # Append to the CSV file
+        if not os.path.isfile(self.path):
+            df.to_csv(self.path, index=False)
+        else:
+            df.to_csv(self.path, mode='a', header=False, index=False)
+
+        self.total_transactions += len(transactions)
+
+        # Check if the number of transactions exceeds the maximum allowed
+        if self.total_transactions >= self.max_transactions:
+            self.logger.warn(f"Reached the maximum limit of {self.max_transactions} transactions for {self.address}. Skipped")
+            return
+
+        # Check if there are more transactions to fetch
+        if len(transactions) == 100:
+            self.page += 1
+            next_url = self.base_url.format(page=self.page)
+            yield scrapy.Request(url=next_url, callback=self.parse, headers=self.headers)
+        else:
+            self.logger.info(f"Total transactions for {self.address}: {self.total_transactions}")
+            print(f"Total transactions for {self.address}: {self.total_transactions}")
