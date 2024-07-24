@@ -3,7 +3,7 @@ from scrapy.utils.project import get_project_settings
 import json
 import scrapy
 from scrapy.crawler import CrawlerProcess
-from solScraper.solScraper.spiders.solWallet import SolwalletSpider
+from wallet_api.spiders.defi_parser import DefiParserSpider
 
 def time_cut(start_timestamp, end_timestamp):
     one_week = 604800  # Durée d'une semaine en secondes
@@ -23,25 +23,24 @@ def time_cut(start_timestamp, end_timestamp):
 
 def run_scraper(wallet_addresses, timestamp):
     try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-        output_directory = config["walletProcess_dir"]
+        
+        output_directory = "./wallet_api/toProcess"
         
         # Récupérer les paramètres du projet Scrapy
         settings = get_project_settings()
         settings.set('TELNETCONSOLE_ENABLED', False)  # Désactiver le Telnet console
 
         process = CrawlerProcess(settings=settings)
-        for i in range(len(timestamp)):
-            for Wallet_addy in wallet_addresses:
-                custom_url = f"https://api-v2.solscan.io/v2/account/transfer/export?address={Wallet_addy}&block_time[]={timestamp[i][0]}&block_time[]={timestamp[i][1]}&page=1"
-                output_filename = f"{Wallet_addy}_{i}.csv"
+#        for i in range(len(timestamp)):
+        for Wallet_addy in wallet_addresses:
+            url = f"https://api-v2.solscan.io/v2/account/activity/dextrading?address={Wallet_addy}&page=1&page_size=100"
+            output_filename = f"{Wallet_addy}.csv"
 
-                process.crawl(SolwalletSpider,
-                              address=Wallet_addy,
-                              url=custom_url,
-                              output_dir=output_directory,
-                              filename=output_filename)
+            process.crawl(DefiParserSpider,
+                            address=Wallet_addy,
+                            url=url,
+                            output_dir=output_directory,
+                            filename=output_filename)
         
         process.start()
     except Exception as e:
