@@ -52,7 +52,8 @@ class DefiParserSpider(scrapy.Spider):
             "decimal1": tx["amount_info"]["token1_decimals"],
             "decimal2": tx["amount_info"]["token2_decimals"],
             "amount1": tx["amount_info"]["amount1"],
-            "amount2": tx["amount_info"]["amount2"]
+            "amount2": tx["amount_info"]["amount2"],
+            "activity_type": tx["activity_type"]  # Assurez-vous que 'activity_type' existe dans la réponse JSON
         } for tx in transactions])
 
         # Append to the CSV file
