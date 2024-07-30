@@ -4,3 +4,4 @@ wallet_api/spiders/__pycache__/
 toProcess/
 notes.md
 processed/
+config.json
