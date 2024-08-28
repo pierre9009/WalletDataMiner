@@ -53,7 +53,7 @@ class DefiParserSpider(scrapy.Spider):
             "decimal2": tx["amount_info"]["token2_decimals"],
             "amount1": tx["amount_info"]["amount1"],
             "amount2": tx["amount_info"]["amount2"],
-            "activity_type": tx["activity_type"]  # Assurez-vous que 'activity_type' existe dans la réponse JSON
+            "activity_type": tx["activity_type"]
         } for tx in transactions])
 
         # Append to the CSV file
@@ -75,5 +75,5 @@ class DefiParserSpider(scrapy.Spider):
             next_url = self.base_url.format(page=self.page)
             yield scrapy.Request(url=next_url, callback=self.parse, headers=self.headers)
         else:
-            self.logger.info(f"Total transactions for {self.address}: {self.total_transactions}")
             print(f"Total transactions for {self.address}: {self.total_transactions}")
+            self.logger.info(f"Total transactions for {self.address}: {self.total_transactions}")

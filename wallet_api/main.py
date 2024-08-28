@@ -7,30 +7,14 @@ from wallet_api.spiders.defi_parser import DefiParserSpider
 with open('config.json', 'r') as f:
     config = json.load(f)
 
-def time_cut(start_timestamp, end_timestamp):
-    one_week = 604800  # Durée d'une semaine en secondes
-    intervals = []
-
-    if (end_timestamp - start_timestamp) > one_week:
-        current_start = start_timestamp
-        while current_start + one_week < end_timestamp:
-            current_end = current_start + one_week
-            intervals.append((current_start, current_end))
-            current_start = current_end + 1  # Commence le prochain intervalle une seconde après la fin du précédent
-        intervals.append((current_start, end_timestamp))  # Ajouter le dernier intervalle
-    else:
-        intervals.append((start_timestamp, end_timestamp))
-    
-    return intervals
-
-def run_scraper(wallet_addresses, timestamp):
+def run_scraper(wallet_addresses):
     try:
         output_directory = config["walletProcess_dir"]
         
         # Récupérer les paramètres du projet Scrapy
         settings = get_project_settings()
         settings.set('TELNETCONSOLE_ENABLED', False)  # Désactiver le Telnet console
-        settings.set('LOG_LEVEL', 'WARNING')  # Afficher uniquement les messages de niveau WARNING et supérieur
+        settings.set('LOG_LEVEL', 'WARN')  # Afficher uniquement les messages de niveau WARNING et supérieur
 
         process = CrawlerProcess(settings=settings)
         for Wallet_addy in wallet_addresses:
@@ -62,8 +46,4 @@ if __name__ == "__main__":
         "Haee7H5bKDCnm6dXLkeR9DcWw9Puhnkwk71QBUSHcpUt",
         "C8SVWzmSvoYKfQKjkmr7Vz4hk13MGBxWXcynhEYEpddi"
     ]
-    start_timestamp = 1721150732 - 604800
-    end_timestamp = 1721150732
-
-    timestamp = time_cut(start_timestamp, end_timestamp)
-    run_scraper(wallet_addresses, timestamp)
+    run_scraper(wallet_addresses)
