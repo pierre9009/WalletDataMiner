@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from colorama import Fore, Style, init
 import json
+from typing import Dict, List, Optional
+import time
 
 # Initialize colorama for Windows
 init(autoreset=True)
@@ -69,13 +71,13 @@ def get_sol_price_at_time(dt, price_cache, retries=3):
         logger.debug(f"SOL price for {dt_str} found in cache")
         return price_cache[dt_str]
     
-    logger.info(f"Fetching SOL price for {dt_str}")
+    logger.debug(f"Fetching SOL price for {dt_str}")
     sol_data = yf.download('SOL-USD', start=dt, end=dt + timedelta(hours=1), interval='1h', progress=False)
     if not sol_data.empty:
         price = sol_data.iloc[0]['Close']
         price_cache[dt_str] = price
         save_sol_price_cache(price_cache)  # Save the updated cache
-        logger.info(f"Added new SOL price for {dt_str}: ${price}")
+        logger.debug(f"Added new SOL price for {dt_str}: ${price}")
         return price
     elif retries > 0:
         logger.warning(f"No data found for {dt}, retrying with {retries - 1} retries left...")
@@ -84,18 +86,61 @@ def get_sol_price_at_time(dt, price_cache, retries=3):
         logger.error(f"Failed to retrieve SOL price for {dt} after multiple attempts.")
         raise ValueError(f"Failed to retrieve SOL price for {dt} after multiple attempts.")
 
-def get_token_price(pair_addresses):
-    url = f"https://api.dexscreener.io/latest/dex/tokens/{pair_addresses}"
-    try:
-        response = requests.get(url, timeout=3)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("pairs"):
-            price = float(data['pairs'][0]['priceUsd'])
-            return price
-    except (requests.RequestException, ValueError) as e:
-        logger.warning(f"Error requesting {pair_addresses} through dexscreener: {e}")
-    return None
+def get_token_prices(tokens, price_cache):
+    recovered, recovered_pump = 0, 0
+    non_pump_tokens = [token for token in tokens if not token.endswith('pump')]
+    pump_tokens = [token for token in tokens if token.endswith('pump')]
+    
+    prices = {}
+    
+    # Récupérer les prix pour les tokens non-pump
+    if non_pump_tokens:
+        chunks = [non_pump_tokens[i:i+30] for i in range(0, len(non_pump_tokens), 30)]
+        for chunk in chunks:
+            url = f"https://api.dexscreener.io/latest/dex/tokens/{','.join(chunk)}"
+            try:
+                response = requests.get(url, timeout=5)
+                response.raise_for_status()
+                data = response.json()
+                if data['pairs']:
+                    for pair in data.get('pairs', []):
+                        token_address = pair.get('chainId')
+                        if token_address in chunk:
+                            prices[token_address] = float(pair.get('priceUsd', 0))
+                            recovered += 1
+            except (requests.RequestException, ValueError) as e:
+                logger.warning(f"Error requesting prices through dexscreener: {e}")
+    
+    # Récupérer les prix pour les tokens pump
+    sol_price = get_sol_price_at_time(round_to_nearest_hour(datetime.now()-timedelta(hours=1)),price_cache)
+    for token in pump_tokens:
+        url = f"https://frontend-api.pump.fun/candlesticks/{token}?offset=0&limit=1&timeframe=1"
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            if data and len(data) > 0:
+                close_price = data[0].get('close', 0)
+                prices[token] = close_price * sol_price
+                recovered_pump += 1
+        except (requests.RequestException, ValueError) as e:
+            logger.warning(f"Error requesting price for pump token {token}: {e}")
+    logger.info(f"Price recovered : raydium:{recovered} pump :{recovered_pump} over {len(tokens)}")
+    return prices
+
+def calculate_unrealized_pnl(pnl_tracker, price_cache):
+    tokens = [token for token, pnl in pnl_tracker.items() if pnl['balance'] > 0]
+    prices = get_token_prices(tokens, price_cache)
+    
+    for token, pnl in pnl_tracker.items():
+        if pnl['balance'] > 0:
+            price = prices.get(token)
+            if price is not None:
+                pnl['unrealized'] = pnl['balance'] * price
+                logger.debug(f"Unrealized PnL for {token}: ${pnl['unrealized']}")
+            else:
+                pnl['unrealized'] = 0
+                logger.warning(f"Unable to get price for token: {token}")
 
 def process_transaction(row, price_cache, pnl_tracker):
     token1, token2 = row['token1'], row['token2']
@@ -140,6 +185,9 @@ def process_transaction(row, price_cache, pnl_tracker):
 
 def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None):
     logger.info(f"Starting PnL calculation for file: {file_path}")
+
+
+
     df = pd.read_csv(file_path)
     df = df[df['activity_type'].isin(["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"])]
     df['block_time'] = pd.to_datetime(df['block_time'], unit='s')
@@ -153,6 +201,9 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
     df = df.iloc[::-1].reset_index(drop=True)
 
     pnl_tracker = {}
+    summary_data=[]
+    winning_trades, gross_profit, total_invested, total_unrealized_pnl, total_realized_pnl, total_trades, total_volume = 0, 0, 0, 0, 0, 0, 0
+
     price_cache = load_sol_price_cache()
 
     logger.info(f"Processing {len(df)} transactions")
@@ -168,29 +219,24 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
         logger.debug(f"Realized PnL for {token}: ${pnl['realized']}")
 
     logger.info("Calculating unrealized PnL")
-    for token, pnl in pnl_tracker.items():
-        if pnl['balance'] > 0:
-            price = get_token_price(token)
-            if price is not None:
-                pnl['unrealized'] = pnl['balance'] * price
-                logger.debug(f"Unrealized PnL for {token}: ${pnl['unrealized']}")
-            else:
-                pnl['unrealized'] = 0
-
-    summary_data = [
-            {
-                'Token': token,
-                'USD invested': pnl['usd_invested'],
-                'USD withdrawn': pnl['usd_withdrawn'],
-                'Balance': pnl['balance'],
-                'Number of trades': pnl['trade_count'],
-                'First trade date': pnl['first_trade_date'],
-                'Last trade date': pnl['last_trade_date'],
-                'Realized PnL (USD)': pnl['realized'],
-                'Unrealized PnL (USD)': pnl['unrealized']
-            }
-            for token, pnl in pnl_tracker.items()
-        ]
+    calculate_unrealized_pnl(pnl_tracker,price_cache)
+    
+    for token, pnl in pnl_tracker.items() :
+        
+        summary_data.append(
+                {
+                    'Token': token,
+                    'USD invested': pnl['usd_invested'],
+                    'USD withdrawn': pnl['usd_withdrawn'],
+                    'Balance': pnl['balance'],
+                    'Number of trades': pnl['trade_count'],
+                    'First trade date': pnl['first_trade_date'],
+                    'Last trade date': pnl['last_trade_date'],
+                    'Realized PnL (USD)': pnl['realized'],
+                    'Unrealized PnL (USD)': pnl['unrealized']
+                })
+        if (pnl['usd_withdrawn'] + pnl['unrealized']) > pnl['usd_invested'] :
+            winning_trades += 1
 
     summary_df = pd.DataFrame(summary_data)
     address = os.path.splitext(os.path.basename(file_path))[0]
@@ -198,10 +244,30 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
     summary_df.to_csv(output_file, index=False)
     logger.info(f"Saved summary to {output_file}")
 
-    total_realized_pnl = sum(pnl['realized'] for pnl in pnl_tracker.values())
-    total_unrealized_pnl = sum(pnl['unrealized'] for pnl in pnl_tracker.values())
-    logger.info(f"Total Realized PnL: ${total_realized_pnl}, Total Unrealized PnL: ${total_unrealized_pnl}")
-    return total_realized_pnl, total_unrealized_pnl
+    total_token_traded = len(pnl_tracker)
+    
+    for token, pnl in pnl_tracker.items() :
+        gross_profit += (pnl['usd_withdrawn'] + pnl['unrealized']) - pnl['usd_invested']
+        total_invested += pnl['usd_invested']
+        total_unrealized_pnl += pnl['unrealized']
+        total_realized_pnl += pnl['realized']
+        total_trades += pnl['trade_count']
+        total_volume += (pnl['usd_withdrawn'] + pnl['usd_invested'])
+
+    win_rate = (winning_trades / total_token_traded) * 100 if total_trades > 0 else 0
+    total_roi = (gross_profit / total_invested) * 100 if total_invested > 0 else 0
+    
+    results = {
+        'total_realized_pnl': total_realized_pnl,
+        'total_unrealized_pnl': total_unrealized_pnl,
+        'gross_profit': gross_profit,
+        'win_rate': win_rate,
+        'total_roi': total_roi,
+        'total_invested': total_invested,
+        'total_trades': total_trades,
+        'total_volume': total_volume
+    }
+    return results
     
 def clear_input_folder(folder_path):
     for filename in os.listdir(folder_path):
@@ -214,7 +280,7 @@ def main():
     output_folder = './wallet_api/processed/'
     os.makedirs(output_folder, exist_ok=True)
 
-    start_date = datetime.now() - timedelta(days=7)
+    start_date = datetime.now() - timedelta(days=30)
     logger.info(f"Using start date: {start_date}")
     address_pnls = {}
 
@@ -223,17 +289,22 @@ def main():
             file_path = os.path.join(input_folder, filename)
             address = filename.split('.')[0]
             logger.info(f"Processing file for address: {address}")
-            total_realized_pnl, total_unrealized_pnl = calculate_pnl_and_generate_summary(file_path, output_folder, start_date)
-            address_pnls[address] = (total_realized_pnl, total_unrealized_pnl)
+
+            metrics = calculate_pnl_and_generate_summary(file_path, output_folder, start_date)
+            address_pnls[address] = (metrics['total_realized_pnl'], metrics['total_unrealized_pnl'])
+            
+            
+            # Calculer et afficher les métriques de trading
+            logger.info(f"Trading metrics for {address}:")
+            logger.info(f"Realized PnL: ${metrics['total_realized_pnl']:.2f}")
+            logger.info(f"Unrealized PnL: ${metrics['total_unrealized_pnl']:.2f}")
+            logger.info(f"Gross Profit: ${metrics['gross_profit']:.2f}")
+            logger.info(f"Win Rate: {metrics['win_rate']:.2f}%")
+            logger.info(f"Total ROI: {metrics['total_roi']:.2f}%")
+            logger.info(f"Volume: ${metrics['total_volume']:.2f}")
+            logger.info(f"Total Trades: {metrics['total_trades']}")
+            
             logger.info("--------------------------------------------------------------------------------------")
-
-    print(Fore.GREEN + Style.BRIGHT + "\nPnL Results by Address:\n" + "-"*50 + "\n")
-    for address, (realized_pnl, unrealized_pnl) in address_pnls.items():
-        print(Fore.CYAN + Style.BRIGHT + f"Address: {address}")
-        print(f"{Fore.GREEN if realized_pnl >= 0 else Fore.RED}  Realized PnL (USD): {realized_pnl}")
-        print(f"{Fore.GREEN if unrealized_pnl >= 0 else Fore.RED}  Unrealized PnL (USD): {unrealized_pnl}")
-        print(Fore.GREEN + "-"*50)
-
     clear_input_folder(input_folder)
     logger.info("PnL calculation process completed")
 
