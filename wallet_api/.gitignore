@@ -6,3 +6,4 @@ notes.md
 processed/
 config.json
 sol_price_cache.json
+__pycache__/

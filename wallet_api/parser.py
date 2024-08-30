@@ -31,6 +31,7 @@ class ColoredLogger(logging.Logger):
         super()._log(level, msg, args, exc_info, extra)
 
 logging.setLoggerClass(ColoredLogger)
+logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,12 @@ SOL_PRICE_CACHE_FILE = 'sol_price_cache.json'
 def round_to_nearest_hour(timestamp):
     dt = datetime.fromtimestamp(timestamp)
     return datetime(dt.year, dt.month, dt.day, dt.hour)
+
+def arrondir_heure_plus_proche(datetime_format):
+    if datetime_format.minute >= 30:
+        return datetime_format.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    else:
+        return datetime_format.replace(minute=0, second=0, microsecond=0)
 
 def load_sol_price_cache():
     if os.path.exists(SOL_PRICE_CACHE_FILE):
@@ -87,33 +94,12 @@ def get_sol_price_at_time(dt, price_cache, retries=3):
         raise ValueError(f"Failed to retrieve SOL price for {dt} after multiple attempts.")
 
 def get_token_prices(tokens, price_cache):
-    recovered, recovered_pump = 0, 0
-    non_pump_tokens = [token for token in tokens if not token.endswith('pump')]
-    pump_tokens = [token for token in tokens if token.endswith('pump')]
-    
+    recovered = 0
     prices = {}
-    
-    # Récupérer les prix pour les tokens non-pump
-    if non_pump_tokens:
-        chunks = [non_pump_tokens[i:i+30] for i in range(0, len(non_pump_tokens), 30)]
-        for chunk in chunks:
-            url = f"https://api.dexscreener.io/latest/dex/tokens/{','.join(chunk)}"
-            try:
-                response = requests.get(url, timeout=5)
-                response.raise_for_status()
-                data = response.json()
-                if data['pairs']:
-                    for pair in data.get('pairs', []):
-                        token_address = pair.get('chainId')
-                        if token_address in chunk:
-                            prices[token_address] = float(pair.get('priceUsd', 0))
-                            recovered += 1
-            except (requests.RequestException, ValueError) as e:
-                logger.warning(f"Error requesting prices through dexscreener: {e}")
-    
-    # Récupérer les prix pour les tokens pump
-    sol_price = get_sol_price_at_time(round_to_nearest_hour(datetime.now()-timedelta(hours=1)),price_cache)
-    for token in pump_tokens:
+    sol_price = get_sol_price_at_time(arrondir_heure_plus_proche(datetime.now()-timedelta(hours=1)), price_cache)
+
+    for token in tokens:
+        # Essayer d'abord avec Pump Fun
         url = f"https://frontend-api.pump.fun/candlesticks/{token}?offset=0&limit=1&timeframe=1"
         try:
             response = requests.get(url, timeout=5)
@@ -122,10 +108,27 @@ def get_token_prices(tokens, price_cache):
             if data and len(data) > 0:
                 close_price = data[0].get('close', 0)
                 prices[token] = close_price * sol_price
-                recovered_pump += 1
+                recovered += 1
+                continue  # Passer au token suivant si réussi
         except (requests.RequestException, ValueError) as e:
-            logger.warning(f"Error requesting price for pump token {token}: {e}")
-    logger.info(f"Price recovered : raydium:{recovered} pump :{recovered_pump} over {len(tokens)}")
+            logger.warning(f"Error requesting price for token {token} from Pump Fun: {e}")
+
+        # Si Pump Fun échoue, essayer avec Jupiter
+        jupiter_url = f"https://price.jup.ag/v6/price?ids={token}&vsToken=USDC"
+        try:
+            response = requests.get(jupiter_url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            if 'data' in data and token in data['data']:
+                price = float(data['data'][token]['price'])
+                prices[token] = price
+                recovered += 1
+            else:
+                logger.warning(f"No price data found for token {token} from Jupiter")
+        except (requests.RequestException, ValueError) as e:
+            logger.warning(f"Error requesting price for token {token} from Jupiter: {e}")
+
+    logger.info(f"Tokens price recovered: {recovered} over {len(tokens)}")
     return prices
 
 def calculate_unrealized_pnl(pnl_tracker, price_cache):
@@ -241,7 +244,7 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
     summary_df = pd.DataFrame(summary_data)
     address = os.path.splitext(os.path.basename(file_path))[0]
     output_file = os.path.join(output_folder, f"{address}_summary.csv")
-    summary_df.to_csv(output_file, index=False)
+    summary_df.to_csv(output_file, mode='w', index=False)
     logger.info(f"Saved summary to {output_file}")
 
     total_token_traded = len(pnl_tracker)
@@ -296,8 +299,6 @@ def main():
             
             # Calculer et afficher les métriques de trading
             logger.info(f"Trading metrics for {address}:")
-            logger.info(f"Realized PnL: ${metrics['total_realized_pnl']:.2f}")
-            logger.info(f"Unrealized PnL: ${metrics['total_unrealized_pnl']:.2f}")
             logger.info(f"Gross Profit: ${metrics['gross_profit']:.2f}")
             logger.info(f"Win Rate: {metrics['win_rate']:.2f}%")
             logger.info(f"Total ROI: {metrics['total_roi']:.2f}%")

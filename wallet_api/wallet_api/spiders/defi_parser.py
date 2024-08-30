@@ -3,7 +3,6 @@ from scrapy.selector import Selector
 import os
 import pandas as pd
 import json
-import logging
 
 class DefiParserSpider(scrapy.Spider):
     name = "defi_parser"
@@ -66,7 +65,7 @@ class DefiParserSpider(scrapy.Spider):
 
         # Check if the number of transactions exceeds the maximum allowed
         if self.total_transactions >= self.max_transactions:
-            self.logger.warn(f"Reached the maximum limit of {self.max_transactions} transactions for {self.address}. Skipped")
+            #self.logger.warn(f"Reached the maximum limit of {self.max_transactions} transactions for {self.address}. Skipped")
             return
 
         # Check if there are more transactions to fetch
@@ -76,4 +75,4 @@ class DefiParserSpider(scrapy.Spider):
             yield scrapy.Request(url=next_url, callback=self.parse, headers=self.headers)
         else:
             print(f"Total transactions for {self.address}: {self.total_transactions}")
-            self.logger.info(f"Total transactions for {self.address}: {self.total_transactions}")
+            #self.logger.info(f"Total transactions for {self.address}: {self.total_transactions}")
