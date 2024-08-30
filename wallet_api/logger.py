@@ -26,43 +26,22 @@ def setup_logger():
     logging.setLoggerClass(ColoredLogger)
     
     # Create the root logger and set the basic configuration
-    logger = logging.getLogger()
-    if not logger.hasHandlers():
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)  # Set root logger level to INFO
-
-    # Configure Scrapy and other loggers
-    scrapy_loggers = [
-        "scrapy",
-        "scrapy.core",
-        "scrapy.utils",
-        "scrapy.spidermw",
-        "scrapy.middleware",
-        "scrapy.extensions",
-        "scrapy.downloader",
-        "scrapy.scheduler",
-        "scrapy.crawler",
-        "scrapy.utils.spider",
-        "scrapy.core.downloader.handlers",
-        "scrapy.core.downloader"
-    ]
-
-    for module in scrapy_loggers:
-        logging.getLogger(module).setLevel(logging.ERROR)
+    logging.basicConfig(
+        level=logging.INFO,  # Niveau par défaut pour afficher les logs
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format du message de log
+        datefmt='%Y-%m-%d %H:%M:%S',  # Format de la date
+        handlers=[
+            logging.StreamHandler()  # Envoyer les logs à la console (stdout)
+        ]
+    )
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        handler.setLevel(logging.DEBUG)
+    logging.getLogger('scrapy').propagate = False
 
     # Configure other loggers if necessary
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     logging.getLogger("peewee").setLevel(logging.ERROR)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
-
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
     return logging.getLogger(__name__)
-def print_loggers():
-    for name in logging.root.manager.loggerDict:
-        logger = logging.getLogger(name)
-        print(f"Logger: {name}")
-        print(f"  Level: {logger.level}")
-        for handler in logger.handlers:
-            print(f"  Handler: {handler}")
-        print()

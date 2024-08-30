@@ -7,12 +7,11 @@ from config import (
     EXCLUDED_TOKENS, SOLANA_ADDRESSES, INCLUDED_ACTIVITY_TYPES,
     OUTPUT_FOLDER
 )
-from logger import setup_logger
-from file_utils import round_to_nearest_hour, arrondir_heure_plus_proche
+from file_utils import round_to_nearest_hour
 
-logger = setup_logger()
 
-def process_transaction(row, price_cache, pnl_tracker):
+
+def process_transaction(row, price_cache, pnl_tracker, logger):
     token1, token2 = row['token1'], row['token2']
     amount1, amount2 = row['amount1'], row['amount2']
     dt = round_to_nearest_hour(row['block_time'].timestamp())
@@ -25,7 +24,7 @@ def process_transaction(row, price_cache, pnl_tracker):
         logger.debug(f"Skipping non-Solana transaction: {token1}, {token2}")
         return
 
-    sol_price_at_time = get_sol_price_at_time(dt, price_cache)
+    sol_price_at_time = get_sol_price_at_time(dt, price_cache, logger)
     if sol_price_at_time is None:
         logger.warning(f"Unable to process transaction due to missing SOL price for {dt}")
         return
@@ -53,9 +52,9 @@ def process_transaction(row, price_cache, pnl_tracker):
     pnl['last_trade_date'] = dt
     pnl['trade_count'] += 1
 
-def calculate_unrealized_pnl(pnl_tracker, price_cache):
+def calculate_unrealized_pnl(pnl_tracker, price_cache, logger):
     tokens = [token for token, pnl in pnl_tracker.items() if pnl['balance'] > 0]
-    prices = get_token_prices(tokens, price_cache)
+    prices = get_token_prices(tokens, price_cache, logger)
 
     for token, pnl in pnl_tracker.items():
         if pnl['balance'] > 0:
@@ -65,9 +64,8 @@ def calculate_unrealized_pnl(pnl_tracker, price_cache):
                 logger.debug(f"Unrealized PnL for {token}: ${pnl['unrealized']}")
             else:
                 pnl['unrealized'] = 0
-                logger.warning(f"Unable to get price for token: {token}")
 
-def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None):
+def calculate_pnl_and_generate_summary(logger, file_path, output_folder, start_date=None):
     logger.info(f"Starting PnL calculation for file: {file_path}")
 
     df = pd.read_csv(file_path)
@@ -86,11 +84,11 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
     summary_data = []
     winning_trades, gross_profit, total_invested, total_unrealized_pnl, total_realized_pnl, total_trades, total_volume = 0, 0, 0, 0, 0, 0, 0
 
-    price_cache = load_sol_price_cache()
+    price_cache = load_sol_price_cache(logger)
 
     logger.info(f"Processing {len(df)} transactions")
     for _, row in df.iterrows():
-        process_transaction(row, price_cache, pnl_tracker)
+        process_transaction(row, price_cache, pnl_tracker, logger)
 
     logger.info("Calculating realized PnL")
     for token, pnl in pnl_tracker.items():
@@ -101,7 +99,7 @@ def calculate_pnl_and_generate_summary(file_path, output_folder, start_date=None
         logger.debug(f"Realized PnL for {token}: ${pnl['realized']}")
 
     logger.info("Calculating unrealized PnL")
-    calculate_unrealized_pnl(pnl_tracker, price_cache)
+    calculate_unrealized_pnl(pnl_tracker, price_cache, logger)
 
     for token, pnl in pnl_tracker.items():
         summary_data.append({

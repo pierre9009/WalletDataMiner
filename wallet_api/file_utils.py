@@ -8,12 +8,16 @@ def clear_input_folder(folder_path):
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+
 def round_to_nearest_hour(timestamp):
     dt = datetime.fromtimestamp(timestamp)
-    return datetime(dt.year, dt.month, dt.day, dt.hour)
-
-def arrondir_heure_plus_proche(datetime_format):
-    if datetime_format.minute >= 30:
-        return datetime_format.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-    else:
-        return datetime_format.replace(minute=0, second=0, microsecond=0)
+    # Calcul de l'arrondi à l'heure la plus proche
+    rounded_hour = dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1 if dt.minute >= 30 else 0)
+    
+    # Vérification si l'heure arrondie est dans le futur
+    now = datetime.now()
+    if rounded_hour > now:
+        # Si oui, on revient de 2 heures en arrière
+        rounded_hour -= timedelta(hours=2)
+    
+    return rounded_hour
