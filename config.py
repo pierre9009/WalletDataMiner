@@ -2,9 +2,9 @@
 from datetime import datetime, timedelta
 
 # Chemins des dossiers
-INPUT_FOLDER = './wallet_api/toProcess/'
-OUTPUT_FOLDER = './wallet_api/processed/'
-WALLET_TOPROCESS= 'C:/Users/Pc-Portable/Documents/Python Scripts/Solana/API_dev/wallet_api/wallet_api/toProcess'
+INPUT_FOLDER = './toProcess/'
+OUTPUT_FOLDER = './processed/'
+WALLET_TOPROCESS= './toProcess/' # Redondant avec INPUT_FOLDER, à supprimer
 
 # Configurations des tokens
 EXCLUDED_TOKENS = {

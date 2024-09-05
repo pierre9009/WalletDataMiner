@@ -1,7 +1,7 @@
 #get_trans.py
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-from wallet_api.spiders.defi_parser import DefiParserSpider
+from scraper.spiders.defi_parser import DefiParserSpider
 
 from config import WALLET_TOPROCESS, SOLSCAN_API_URL
 import time
