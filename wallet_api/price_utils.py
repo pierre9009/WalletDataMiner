@@ -5,7 +5,7 @@ import requests
 import time
 import yfinance as yf
 from datetime import datetime, timedelta
-from config import SOL_PRICE_CACHE_FILE
+from config import SOL_PRICE_CACHE_FILE, PUMP_FUN_API_URL, JUPITER_API_URL
 from file_utils import round_to_nearest_hour
 
 def load_sol_price_cache(logger):
@@ -52,9 +52,8 @@ def get_token_prices(tokens, price_cache, logger):
 
     for token in tokens:
         # Essayer d'abord avec Pump Fun
-        url = f"https://frontend-api.pump.fun/candlesticks/{token}?offset=0&limit=1&timeframe=1"
         try:
-            response = requests.get(url, timeout=1)
+            response = requests.get(PUMP_FUN_API_URL.format(token = token), timeout=1)
             response.raise_for_status()
             data = response.json()
             if data and len(data) > 0:
@@ -66,9 +65,8 @@ def get_token_prices(tokens, price_cache, logger):
             logger.warning(f"Error requesting price for token {token} from Pump Fun: {e}")
 
         # Si Pump Fun échoue, essayer avec Jupiter
-        jupiter_url = f"https://price.jup.ag/v6/price?ids={token}&vsToken=USDC"
         try:
-            response = requests.get(jupiter_url, timeout=1)
+            response = requests.get(JUPITER_API_URL.format(token = token), timeout=1)
             response.raise_for_status()
             data = response.json()
             if 'data' in data and token in data['data']:
@@ -80,5 +78,5 @@ def get_token_prices(tokens, price_cache, logger):
         except (requests.RequestException, ValueError) as e:
             logger.warning(f"Error requesting price for token {token} from Jupiter: {e}")
 
-    logger.info(f"Tokens price recovered: {recovered} over {len(tokens)}")
+    logger.info(f"Tokens price recovered: {recovered} / {len(tokens)}")
     return prices

@@ -19,5 +19,4 @@ def round_to_nearest_hour(timestamp):
     if rounded_hour > now:
         # Si oui, on revient de 2 heures en arrière
         rounded_hour -= timedelta(hours=2)
-    
     return rounded_hour

@@ -16,7 +16,7 @@ def run_scraper(wallet_addresses,logger):
         process = CrawlerProcess(settings=settings)
 
         for Wallet_addy in wallet_addresses:
-            url = url = SOLSCAN_API_URL.format(address=Wallet_addy)
+            url = SOLSCAN_API_URL.format(address=Wallet_addy)
             output_filename = f"{Wallet_addy}.csv"
 
             process.crawl(DefiParserSpider,

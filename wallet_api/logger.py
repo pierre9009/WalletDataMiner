@@ -36,7 +36,7 @@ def setup_logger():
     )
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
-        handler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.INFO)
     logging.getLogger('scrapy').propagate = False
 
     # Configure other loggers if necessary
