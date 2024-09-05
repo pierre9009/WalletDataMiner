@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 # Chemins des dossiers
 INPUT_FOLDER = './toProcess/'
 OUTPUT_FOLDER = './processed/'
-WALLET_TOPROCESS= './toProcess/' # Redondant avec INPUT_FOLDER, à supprimer
+
 
 # Configurations des tokens
 EXCLUDED_TOKENS = {

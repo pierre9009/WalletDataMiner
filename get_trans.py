@@ -3,7 +3,7 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 from scraper.spiders.defi_parser import DefiParserSpider
 
-from config import WALLET_TOPROCESS, SOLSCAN_API_URL
+from config import INPUT_FOLDER, SOLSCAN_API_URL
 import time
 
 
@@ -21,7 +21,7 @@ def run_scraper(wallet_addresses,logger):
 
             process.crawl(DefiParserSpider,
                           address=Wallet_addy,
-                          output_dir=WALLET_TOPROCESS,
+                          output_dir=INPUT_FOLDER,
                           filename=output_filename,
                           custom_url=url)
         
