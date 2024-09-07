@@ -16,6 +16,7 @@ def main():
     logger.info("Starting download process")
     run_scraper(WALLET_ADDRESSES, logger)
     logger.info("Starting PnL calculation process")
+    os.makedirs(INPUT_FOLDER, exist_ok=True)
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     logger.info(f"Using start date: {START_DATE}")
     address_pnls = {}

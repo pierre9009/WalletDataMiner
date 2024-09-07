@@ -3,7 +3,5 @@ scrapy
 pandas
 playsound
 colorama
-logging
-time
 datetime
 yfinance
