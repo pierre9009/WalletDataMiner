@@ -1,0 +1,10 @@
+requests
+scrapy
+pandas
+json
+playsound
+colorama
+logging
+time
+datetime
+yfinance

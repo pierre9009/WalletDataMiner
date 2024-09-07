@@ -1,6 +1,6 @@
 #adresses.py
 
-WALLET_ADDRESSES = ["CttafzNU3NnYsNiuiQLqYeqJikYnzzh9ZzgE9mKraY4w",
+WALLET_ADDRESSES = ["CuvaikSrjiwvsBs8W51oRomA3vgjQdgSVxFgXLyhnKq5",
 #        "HzkLu4hBwtn6xdiFZ4GgtFzLQdhwtBT1nAEUxDHTpemd",
 #        "rAkF7sr35MasvQ48ss4uCEn8ijHdDaxBrNpTqaGNGoF",
 #        "A5TYS17zBnd8TUEr2GyHzysBqisBUnG8seRZrMxaK4Ku",

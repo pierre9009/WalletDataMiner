@@ -143,6 +143,7 @@ def calculate_pnl_and_generate_summary(logger, file_path, output_folder, start_d
         'total_roi': total_roi,
         'total_invested': total_invested,
         'total_trades': total_trades,
-        'total_volume': total_volume
+        'total_volume': total_volume,
+        'total_token_traded': total_token_traded
     }
     return results

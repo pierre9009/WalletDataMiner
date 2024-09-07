@@ -36,6 +36,7 @@ def main():
             logger.info(f"Total ROI: {metrics['total_roi']:.2f}%")
             logger.info(f"Volume: ${metrics['total_volume']:.2f}")
             logger.info(f"Total Trades: {metrics['total_trades']}")
+            logger.info(f"Total Token traded: {metrics['total_token_traded']}")
             
             logger.info("--------------------------------------------------------------------------------------")
     clear_input_folder(INPUT_FOLDER)
