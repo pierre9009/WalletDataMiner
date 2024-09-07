@@ -9,7 +9,6 @@ from file_utils import clear_input_folder
 from get_trans import run_scraper
 
 import os
-from playsound import playsound
 
 def main():
     
@@ -42,7 +41,6 @@ def main():
             logger.info("--------------------------------------------------------------------------------------")
     clear_input_folder(INPUT_FOLDER)
     logger.info("PnL calculation process completed")
-    playsound('./finished.mp3')
 
 if __name__ == "__main__":
     logger = setup_logger()
