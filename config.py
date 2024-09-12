@@ -29,9 +29,14 @@ PUMP_FUN_API_URL = "https://frontend-api.pump.fun/candlesticks/{token}?offset=0&
 JUPITER_API_URL = "https://price.jup.ag/v6/price?ids={token}&vsToken=USDC"
 SOLSCAN_API_URL = "https://api-v2.solscan.io/v2/account/activity/dextrading?address={address}&page={{page}}&page_size=100"
 
-# Autres paramètres
+# Autres paramètres solscan ou yfinance
 REQUEST_TIMEOUT = 5
 MAX_RETRIES = 3
 
 # Types d'activités à inclure dans le calcul PnL
 INCLUDED_ACTIVITY_TYPES = ["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"]
+
+#IP de la wallet db
+IP_WALLET_DB = "82.67.116.111"
+DB_WALLET = "wallet_db"
+USER_WALLET_DB = "pierre"
