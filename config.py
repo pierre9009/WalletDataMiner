@@ -35,8 +35,3 @@ MAX_RETRIES = 3
 
 # Types d'activités à inclure dans le calcul PnL
 INCLUDED_ACTIVITY_TYPES = ["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"]
-
-#IP de la wallet db
-IP_WALLET_DB = "82.67.116.111"
-DB_WALLET = "wallet_db"
-USER_WALLET_DB = "pierre"

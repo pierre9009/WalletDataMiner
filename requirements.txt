@@ -4,3 +4,5 @@ pandas
 colorama
 datetime
 yfinance
+psycopg2
+python-dotenv

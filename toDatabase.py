@@ -1,14 +1,17 @@
 import psycopg2
-from config import USER_WALLET_DB, DB_WALLET, IP_WALLET_DB
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def connection_to_db(logger):
     try:
         # Modifier la connexion pour inclure les certificats SSL
         connection = psycopg2.connect(
-                host=IP_WALLET_DB,   # l'adresse IP de ton Raspberry Pi maître
-                database=DB_WALLET,    # nom de la base de données
-                user=USER_WALLET_DB,          # mot de passe de l'utilisateur
-                password=""
+                host=os.getenv('IP_WALLET_DB'),   # l'adresse IP de ton Raspberry Pi maître
+                database=os.getenv('DB_WALLET'),    # nom de la base de données
+                user=os.getenv('USER_WALLET_DB'),          # mot de passe de l'utilisateur
+                password=os.getenv('PASSWORD_WALLET_DB')
             )
         
         cursor = connection.cursor()
