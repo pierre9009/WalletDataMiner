@@ -35,3 +35,4 @@ MAX_RETRIES = 3
 
 # Types d'activités à inclure dans le calcul PnL
 INCLUDED_ACTIVITY_TYPES = ["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"]
+WALLET_ADDRESSES = "addresses_to_process.txt"

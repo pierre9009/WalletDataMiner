@@ -16,7 +16,7 @@ def connection_to_db(logger):
         
         cursor = connection.cursor()
         if connection:
-            logger.info("Wallet database connected with SSL")
+            logger.info("Wallet database connected")
             return connection, cursor
     except Exception as e:
         logger.error(f"Unable to connect to the wallet db: {e}")
