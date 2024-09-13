@@ -8,3 +8,4 @@ config.json
 sol_price_cache.json
 __pycache__/
 .env
+addresses_to_process.txt
