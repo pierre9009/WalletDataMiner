@@ -15,9 +15,6 @@ def process_addresses():
         for address in addresses:
             f.write(f"{address}\n")
     
-    # Lancez le script de traitement en arrière-plan
-    subprocess.Popen(["python", "main.py"])
-    
     return jsonify({"status": "processing", "address_count": len(addresses)})
 
 @app.route('/status', methods=['GET'])
