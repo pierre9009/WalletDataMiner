@@ -77,3 +77,6 @@ if __name__ == "__main__":
 
     print("\nVérification du statut:")
     check_status()
+
+    time.sleep(20)
+    send_addresses()
