@@ -74,7 +74,7 @@ def main():
             logger.warning(f"Addresses file {WALLET_ADDRESSES} not found. Waiting for file creation...")
             time.sleep(5)
 
-    clear_input_folder(INPUT_FOLDER)
+    #clear_input_folder(INPUT_FOLDER)
     close_sql_connection(logger, connection, cursor)
     logger.info("PnL calculation process completed")
 
