@@ -7,3 +7,4 @@ yfinance
 psycopg2
 python-dotenv
 watchdog
+flask

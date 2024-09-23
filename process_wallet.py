@@ -1,4 +1,4 @@
-from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, WALLET_ADDRESSES
+from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, WALLET_ADDRESSES, SOLSCAN_API_URL
 from logger import setup_logger
 from price_utils import load_sol_price_cache, save_sol_price_cache, get_sol_price_at_time, get_token_prices
 from pnl_calculation import process_transaction, calculate_unrealized_pnl, calculate_pnl_and_generate_summary
@@ -11,20 +11,25 @@ import fcntl
 
 def read_addresses(file_path):
     with open(file_path, 'r') as f:
-        fcntl.flock(f, fcntl.LOCK_SH)  # Acquérir un verrou partagé pour la lecture
+        fcntl.flock(f, fcntl.LOCK_SH)  # Verrou pour lecture partagée
         addresses = [line.strip() for line in f if line.strip()]
         fcntl.flock(f, fcntl.LOCK_UN)  # Libérer le verrou
     return addresses
 
 def write_addresses(file_path, addresses):
     with open(file_path, 'w') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)  # Acquérir un verrou exclusif pour l'écriture
+        fcntl.flock(f, fcntl.LOCK_EX)  # Verrou exclusif pour écriture
         for address in addresses:
             f.write(f"{address}\n")
         fcntl.flock(f, fcntl.LOCK_UN)  # Libérer le verrou
 
 def process_address(address, logger, connection, cursor):
     file_path = os.path.join(INPUT_FOLDER, f"{address}.csv")
+    
+    # Lancer le scraper pour récupérer les données
+    logger.info(f"Starting scraper for address: {address}")
+    run_scraper([address], logger)  # Appel à run_scraper pour chaque adresse
+
     if os.path.exists(file_path):
         logger.info(f"Processing file for address: {address}")
         metrics = calculate_pnl_and_generate_summary(logger, file_path, OUTPUT_FOLDER, START_DATE)
