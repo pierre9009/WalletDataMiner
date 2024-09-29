@@ -110,6 +110,8 @@ def calculate_pnl_and_generate_summary(logger, file_path, output_folder, start_d
     for token, pnl in pnl_tracker.items():
         if pnl['usd_invested'] > 0 and pnl['usd_withdrawn'] == 0 and pnl['balance'] > 0:
             pnl['realized'] = 0
+        elif pnl['balance'] < 0:
+            pnl['realized'] = 0 # ignore cases where can be insider or buy is from a long time ago.
         else:
             pnl['realized'] = pnl['usd_withdrawn'] - pnl['usd_invested']
         logger.debug(f"Realized PnL for {token}: ${pnl['realized']}")
