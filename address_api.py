@@ -1,15 +1,13 @@
 from flask import Flask, request, jsonify
+from config import WALLET_ADDRESSES_FILE, PROCESS_SCRIPT
 import subprocess
 import os
 import fcntl
 
 app = Flask(__name__)
 
-ADDRESSES_FILE = 'addresses_to_process.txt'
-PROCESS_SCRIPT = 'process_wallet.py'
-
 def append_addresses_to_file(addresses):
-    with open(ADDRESSES_FILE, 'a') as f:
+    with open(WALLET_ADDRESSES_FILE, 'a') as f:
         fcntl.flock(f, fcntl.LOCK_EX)  # Verrou exclusif pour écrire dans le fichier
         for address in addresses:
             f.write(f"{address}\n")
@@ -43,8 +41,8 @@ def start_processing():
 @app.route('/status', methods=['GET'])
 def get_status():
     # Implémentation basique de vérification d'état (à améliorer selon votre logique)
-    if os.path.exists(ADDRESSES_FILE):
-        with open(ADDRESSES_FILE, 'r') as f:
+    if os.path.exists(WALLET_ADDRESSES_FILE):
+        with open(WALLET_ADDRESSES_FILE, 'r') as f:
             fcntl.flock(f, fcntl.LOCK_SH)  # Verrou pour lecture partagée
             remaining_addresses = [line.strip() for line in f if line.strip()]
             fcntl.flock(f, fcntl.LOCK_UN)  # Libérer le verrou
@@ -54,7 +52,7 @@ def get_status():
         else:
             return jsonify({"status": "idle", "message": "No addresses left to process"})
     else:
-        return jsonify({"status": "error", "message": f"{ADDRESSES_FILE} not found"}), 404
+        return jsonify({"status": "error", "message": f"{WALLET_ADDRESSES_FILE} not found"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

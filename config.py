@@ -33,6 +33,13 @@ SOLSCAN_API_URL = "https://api-v2.solscan.io/v2/account/activity/dextrading?addr
 REQUEST_TIMEOUT = 5
 MAX_RETRIES = 3
 
+#Time out de pump fun ou jupiter pour recuperer le prix des tokens (seconde)
+API_TIMEOUT = 1
+
 # Types d'activités à inclure dans le calcul PnL
 INCLUDED_ACTIVITY_TYPES = ["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"]
-WALLET_ADDRESSES = ".\\addresses_to_process.txt"
+WALLET_ADDRESSES_FILE = ".\\addresses_to_process.txt"
+PROCESS_SCRIPT = '.\\process_wallet.py'
+
+#max transactions à crawl depuis solscan
+MAX_TRANSACTIONS = 3000

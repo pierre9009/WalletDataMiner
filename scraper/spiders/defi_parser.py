@@ -3,6 +3,7 @@ from scrapy.selector import Selector
 import os
 import pandas as pd
 import json
+from config import MAX_TRANSACTIONS
 
 class DefiParserSpider(scrapy.Spider):
     name = "defi_parser"
@@ -32,7 +33,7 @@ class DefiParserSpider(scrapy.Spider):
         self.path = os.path.join(output_dir, filename)
         self.page = 1
         self.total_transactions = 0
-        self.max_transactions = 3000  # Maximum de transactions à récupérer
+        self.max_transactions = MAX_TRANSACTIONS  # Maximum de transactions à récupérer
 
     def start_requests(self):
         yield scrapy.Request(url=self.base_url.format(page=self.page), callback=self.parse, headers=self.headers)

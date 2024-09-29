@@ -5,10 +5,13 @@ import requests
 import time
 import yfinance as yf
 from datetime import datetime, timedelta
-from config import SOL_PRICE_CACHE_FILE, PUMP_FUN_API_URL, JUPITER_API_URL
+from config import SOL_PRICE_CACHE_FILE, PUMP_FUN_API_URL, JUPITER_API_URL, API_TIMEOUT, MAX_RETRIES
 from file_utils import round_to_nearest_hour
 
 def load_sol_price_cache(logger):
+    # Fonction pour charger le cache des prix du SOL à partir d'un fichier JSON
+    # input: logger (pour enregistrer les messages de log)
+    # output: dictionnaire contenant les prix du SOL en cache
     if os.path.exists(SOL_PRICE_CACHE_FILE):
         with open(SOL_PRICE_CACHE_FILE, 'r') as f:
             cache = json.load(f)
@@ -18,12 +21,17 @@ def load_sol_price_cache(logger):
     return {}
 
 def save_sol_price_cache(cache, logger):
-
+    # Fonction pour sauvegarder le cache des prix du SOL dans un fichier JSON
+    # input: cache (dictionnaire de prix), logger (pour enregistrer les messages de log)
+    # output: aucun
     with open(SOL_PRICE_CACHE_FILE, 'w') as f:
         json.dump(cache, f)
     logger.debug(f"Saved SOL price cache with {len(cache)} entries")
 
-def get_sol_price_at_time(dt, price_cache,logger, retries=3):
+def get_sol_price_at_time(dt, price_cache, logger, retries=MAX_RETRIES):
+    # Fonction pour obtenir le prix du SOL à un moment donné en vérifiant le cache ou en récupérant via yfinance
+    # input: dt (datetime pour lequel on veut le prix), price_cache (dictionnaire des prix en cache), logger (pour les logs), retries (nombre de tentatives)
+    # output: prix du SOL pour le moment donné arondie à l'heure près ou lève une erreur après plusieurs tentatives
     dt_str = dt.isoformat()
     if dt_str in price_cache:
         logger.debug(f"SOL price for {dt_str} found in cache")
@@ -45,15 +53,17 @@ def get_sol_price_at_time(dt, price_cache,logger, retries=3):
         raise ValueError(f"Failed to retrieve SOL price for {dt} after multiple attempts.")
 
 def get_token_prices(tokens, price_cache, logger):
+    # Fonction pour récupérer les prix de plusieurs tokens en utilisant l'API Pump Fun puis celle de Jupiter
+    # input: tokens (liste des tokens), price_cache (dictionnaire des prix en cache), logger (pour enregistrer les logs)
+    # output: dictionnaire avec les prix des tokens
     recovered = 0
     prices = {}
-    #sol_price = get_sol_price_at_time(round_to_nearest_hour(time.time()), price_cache,logger, retries=3)
-    sol_price = 150
+    sol_price = get_sol_price_at_time(round_to_nearest_hour(time.time()), price_cache, logger)
 
     for token in tokens:
-        # Essayer d'abord avec Pump Fun
+        # Essayer d'abord de récupérer le prix via l'API Pump Fun
         try:
-            response = requests.get(PUMP_FUN_API_URL.format(token = token), timeout=1)
+            response = requests.get(PUMP_FUN_API_URL.format(token=token), timeout = API_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             if data and len(data) > 0:
@@ -64,9 +74,9 @@ def get_token_prices(tokens, price_cache, logger):
         except (requests.RequestException, ValueError) as e:
             logger.warning(f"Error requesting price for token {token} from Pump Fun: {e}")
 
-        # Si Pump Fun échoue, essayer avec Jupiter
+        # Si l'API Pump Fun échoue, essayer de récupérer le prix via l'API Jupiter
         try:
-            response = requests.get(JUPITER_API_URL.format(token = token), timeout=1)
+            response = requests.get(JUPITER_API_URL.format(token=token), timeout = API_TIMEOUT)
             response.raise_for_status()
             data = response.json()
             if 'data' in data and token in data['data']:
