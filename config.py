@@ -38,8 +38,8 @@ API_TIMEOUT = 1
 
 # Types d'activités à inclure dans le calcul PnL
 INCLUDED_ACTIVITY_TYPES = ["ACTIVITY_TOKEN_SWAP", "ACTIVITY_AGG_TOKEN_SWAP"]
-WALLET_ADDRESSES_FILE = ".\\addresses_to_process.txt"
-PROCESS_SCRIPT = '.\\process_wallet.py'
+WALLET_ADDRESSES_FILE = "./addresses_to_process.txt"
+PROCESS_SCRIPT = './process_wallet.py'
 
 #max transactions à crawl depuis solscan
 MAX_TRANSACTIONS = 3000

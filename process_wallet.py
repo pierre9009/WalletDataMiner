@@ -1,4 +1,4 @@
-from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, WALLET_ADDRESSES, SOLSCAN_API_URL
+from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, WALLET_ADDRESSES_FILE, SOLSCAN_API_URL
 from logger import setup_logger
 from price_utils import load_sol_price_cache, save_sol_price_cache, get_sol_price_at_time, get_token_prices
 from pnl_calculation import process_transaction, calculate_unrealized_pnl, calculate_pnl_and_generate_summary
@@ -57,8 +57,8 @@ def main():
     connection, cursor = connection_to_db(logger)
 
     while True:
-        if os.path.exists(WALLET_ADDRESSES):
-            addresses = read_addresses(WALLET_ADDRESSES)
+        if os.path.exists(WALLET_ADDRESSES_FILE):
+            addresses = read_addresses(WALLET_ADDRESSES_FILE)
 
             if addresses:
                 # Traiter la première adresse (ou la dernière selon l'ordre désiré)
@@ -66,12 +66,12 @@ def main():
                 process_address(address_to_process, logger, connection, cursor)
 
                 # Mettre à jour le fichier avec les adresses restantes
-                write_addresses(WALLET_ADDRESSES, addresses)
+                write_addresses(WALLET_ADDRESSES_FILE, addresses)
             else:
                 logger.info("No addresses to process. Waiting for new addresses...")
                 time.sleep(5)  # Attendre avant de vérifier à nouveau
         else:
-            logger.warning(f"Addresses file {WALLET_ADDRESSES} not found. Waiting for file creation...")
+            logger.warning(f"Addresses file {WALLET_ADDRESSES_FILE} not found. Waiting for file creation...")
             time.sleep(5)
 
     #clear_input_folder(INPUT_FOLDER)
