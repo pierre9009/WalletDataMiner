@@ -1,17 +1,13 @@
+#address_api.py
 from flask import Flask, request, jsonify
-from config import WALLET_ADDRESSES_FILE, PROCESS_SCRIPT
+from config import PROCESS_SCRIPT
 import subprocess
+from multiprocessing import Queue
 import os
 import fcntl
 
 app = Flask(__name__)
-
-def append_addresses_to_file(addresses):
-    with open(WALLET_ADDRESSES_FILE, 'a') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)  # Verrou exclusif pour écrire dans le fichier
-        for address in addresses:
-            f.write(f"{address}\n")
-        fcntl.flock(f, fcntl.LOCK_UN)  # Libérer le verrou
+address_queue = Queue()
 
 @app.route('/process', methods=['POST'])
 def process_addresses():
@@ -21,9 +17,10 @@ def process_addresses():
     if not addresses:
         return jsonify({"status": "error", "message": "No addresses provided"}), 400
 
-    # Enregistrer les adresses dans le fichier
-    append_addresses_to_file(addresses)
-    
+    # Ajouter les adresses à la queue partagée
+    for address in addresses:
+        address_queue.put(address)
+
     return jsonify({"status": "processing", "address_count": len(addresses)})
 
 @app.route('/start_processing', methods=['POST'])
@@ -40,19 +37,7 @@ def start_processing():
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    # Implémentation basique de vérification d'état (à améliorer selon votre logique)
-    if os.path.exists(WALLET_ADDRESSES_FILE):
-        with open(WALLET_ADDRESSES_FILE, 'r') as f:
-            fcntl.flock(f, fcntl.LOCK_SH)  # Verrou pour lecture partagée
-            remaining_addresses = [line.strip() for line in f if line.strip()]
-            fcntl.flock(f, fcntl.LOCK_UN)  # Libérer le verrou
-
-        if remaining_addresses:
-            return jsonify({"status": "processing", "remaining_addresses": len(remaining_addresses)})
-        else:
-            return jsonify({"status": "idle", "message": "No addresses left to process"})
-    else:
-        return jsonify({"status": "error", "message": f"{WALLET_ADDRESSES_FILE} not found"}), 404
+    return jsonify({"status": "queue_size", "remaining_addresses": address_queue.qsize()})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
