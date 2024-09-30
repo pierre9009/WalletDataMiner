@@ -7,7 +7,7 @@ import os
 import fcntl
 
 app = Flask(__name__)
-address_queue = Queue()
+
 
 @app.route('/process', methods=['POST'])
 def process_addresses():
@@ -25,6 +25,7 @@ def process_addresses():
 
 @app.route('/start_processing', methods=['POST'])
 def start_processing():
+    address_queue = Queue()
     if os.path.exists(PROCESS_SCRIPT):
         try:
             # Lancer process_wallet.py en arrière-plan
