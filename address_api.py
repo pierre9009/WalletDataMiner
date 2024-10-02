@@ -4,7 +4,7 @@ import os
 import redis
 import psutil  # Utilisé pour vérifier si le processus est en cours d'exécution
 from dotenv import load_dotenv
-
+load_dotenv()
 # Configuration de la connexion Redis (serveur maître)
 redis_host = '82.67.116.111'  # Remplace par l'IP de ton serveur maître
 redis_port = 6354
@@ -55,5 +55,5 @@ def get_status():
     })
 
 if __name__ == '__main__':
-    load_dotenv()
+    
     app.run(host='0.0.0.0', port=5000)

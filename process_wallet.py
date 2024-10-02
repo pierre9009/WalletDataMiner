@@ -9,7 +9,7 @@ from multiprocessing import Queue
 from dotenv import load_dotenv
 import os
 import time
-
+load_dotenv()
 # Configuration de la connexion Redis
 redis_host = '82.67.116.111'
 redis_port = 6354
@@ -68,5 +68,4 @@ def main():
     logger.info("PnL calculation process completed")
 
 if __name__ == "__main__":
-    load_dotenv()
     main()
