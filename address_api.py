@@ -4,30 +4,42 @@ import os
 import redis
 import psutil  # Utilisé pour vérifier si le processus est en cours d'exécution
 from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
+
 # Configuration de la connexion Redis (serveur maître)
 redis_host = '82.67.116.111'  # Remplace par l'IP de ton serveur maître
 redis_port = 6354
 redis_queue_name = 'wallet_addresses'
 
 # Initialiser la connexion Redis
-r = redis.Redis(host=redis_host, port=redis_port, db=0, password = os.getenv('PASSWORD_REDIS_SERVER'))
+r = redis.Redis(host=redis_host, port=redis_port, db=0, password=os.getenv('PASSWORD_REDIS_SERVER'))
 
 app = Flask(__name__)
 
 def is_process_running(process_name):
     """Vérifie si un processus est déjà en cours d'exécution"""
     for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == process_name:
+        if process_name in proc.info['name']:
             return True
     return False
+
+def stop_all_processes(process_name):
+    """Arrête tous les processus en cours avec le nom donné"""
+    stopped_processes = []
+    for proc in psutil.process_iter(['pid', 'name']):
+        if process_name in proc.info['name']:
+            proc.terminate()  # Terminer le processus
+            stopped_processes.append(proc.info['pid'])  # Enregistrer l'ID du processus terminé
+    return stopped_processes
 
 @app.route('/start_processing', methods=['POST'])
 def start_processing():
     process_script = './process_wallet.py'  # Nom du script de traitement
     log_file = './process_wallet.log'  # Fichier de log où écrire les logs du processus
 
-    if is_process_running("python3"):  # Vérifier si le processus est déjà en cours
+    if is_process_running("process_wallet.py"):  # Vérifier si le processus est déjà en cours
         return jsonify({"status": "running", "message": "process_wallet.py is already running"})
     
     if os.path.exists(process_script):
@@ -46,7 +58,7 @@ def start_processing():
 @app.route('/status', methods=['GET'])
 def get_status():
     """Vérifier l'état du processus et la taille de la queue Redis"""
-    is_running = is_process_running("python3")
+    is_running = is_process_running("process_wallet.py")
     queue_size = r.llen(redis_queue_name)
     
     return jsonify({
@@ -54,6 +66,14 @@ def get_status():
         "queue_size": queue_size
     })
 
+@app.route('/stop_processing', methods=['POST'])
+def stop_processing():
+    """Arrêter tous les processus de 'process_wallet.py'"""
+    stopped_processes = stop_all_processes("process_wallet.py")
+    if stopped_processes:
+        return jsonify({"status": "stopped", "stopped_processes": stopped_processes})
+    else:
+        return jsonify({"status": "not_found", "message": "No process_wallet.py processes were running"})
+
 if __name__ == '__main__':
-    
     app.run(host='0.0.0.0', port=5000)

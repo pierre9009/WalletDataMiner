@@ -31,14 +31,40 @@ def check_status():
         print(f"Erreur: {response.status_code}")
         print(response.text)
 
+# Arrêter tous les processus de traitement via l'API
+def stop_processing():
+    url = f"{BASE_URL}/stop_processing"
+    
+    response = requests.post(url)
+    
+    if response.status_code == 200:
+        print("Arrêt du processus de traitement:")
+        print(json.dumps(response.json(), indent=2))
+    else:
+        print(f"Erreur: {response.status_code}")
+        print(response.text)
+
 # Exécution des tests
 if __name__ == "__main__":
+
+    print("\nArrêt du processus de traitement:")
+    stop_processing()
+    time.sleep(10)
+
+
     print("\nVérification de l'état du traitement avant le démarrage:")
     check_status()
     time.sleep(2)
 
+    print("\nDémarrage du processus de traitement:")
     start_processing()
-    time.sleep(2)
+    time.sleep(5)
 
     print("\nVérification de l'état du traitement après le démarrage:")
+    check_status()
+    time.sleep(2)
+
+    
+
+    print("\nVérification de l'état du traitement après l'arrêt:")
     check_status()
