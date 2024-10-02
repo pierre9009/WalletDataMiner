@@ -26,13 +26,22 @@ def is_process_running(process_name):
     return False
 
 def stop_all_processes(process_name):
-    """Arrête tous les processus en cours avec le nom donné"""
+    """Arrête tous les processus exécutant un script spécifique"""
     stopped_processes = []
-    for proc in psutil.process_iter(['pid', 'name']):
-        if process_name in proc.info['name']:
-            proc.terminate()  # Terminer le processus
-            stopped_processes.append(proc.info['pid'])  # Enregistrer l'ID du processus terminé
+    
+    # Parcourir tous les processus en cours d'exécution
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            # Vérifier si c'est un processus Python et si le script correspond
+            if proc.info['name'] == 'python3' and len(proc.info['cmdline']) > 1 and process_name in proc.info['cmdline'][1]:
+                print(f"Arrêt du processus PID {proc.info['pid']} exécutant {proc.info['cmdline'][1]}")
+                proc.terminate()  # Terminer le processus
+                stopped_processes.append(proc.info['pid'])  # Enregistrer le PID du processus terminé
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass  # Ignorer les erreurs pour les processus qui ne sont plus disponibles
+    
     return stopped_processes
+
 
 @app.route('/start_processing', methods=['POST'])
 def start_processing():

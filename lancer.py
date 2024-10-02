@@ -51,20 +51,3 @@ if __name__ == "__main__":
     stop_processing()
     time.sleep(10)
 
-
-    print("\nVérification de l'état du traitement avant le démarrage:")
-    check_status()
-    time.sleep(2)
-
-    print("\nDémarrage du processus de traitement:")
-    start_processing()
-    time.sleep(5)
-
-    print("\nVérification de l'état du traitement après le démarrage:")
-    check_status()
-    time.sleep(2)
-
-    
-
-    print("\nVérification de l'état du traitement après l'arrêt:")
-    check_status()

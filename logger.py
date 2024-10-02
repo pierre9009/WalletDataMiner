@@ -37,7 +37,7 @@ def setup_logger():
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
         handler.setLevel(logging.INFO)
-    logging.getLogger('scrapy').propagate = False
+    logging.getLogger('scrapy').propagate = True
 
     # Configure other loggers if necessary
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)

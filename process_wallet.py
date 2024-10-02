@@ -9,6 +9,8 @@ from multiprocessing import Queue
 from dotenv import load_dotenv
 import os
 import time
+import redis
+
 load_dotenv()
 # Configuration de la connexion Redis
 redis_host = '82.67.116.111'
@@ -39,9 +41,11 @@ def process_address(address, logger, connection, cursor):
         logger.info(f"Total Token traded: {metrics['total_token_traded']}")
 
         toDatabase(logger, connection, cursor, address, metrics['gross_profit'], metrics['win_rate'], metrics['total_roi'], metrics['total_volume'], metrics['total_trades'], metrics['total_token_traded'])
+        clear_input_folder(file_path)
         logger.info("--------------------------------------------------------------------------------------")
     else:
         logger.warning(f"File not found for address: {address}")
+        logger.info("--------------------------------------------------------------------------------------")
 
 def main():
     logger = setup_logger()
