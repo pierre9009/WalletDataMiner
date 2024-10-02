@@ -6,11 +6,17 @@ from file_utils import clear_input_folder
 from get_trans import run_scraper
 from toDatabase import toDatabase, connection_to_db, close_sql_connection
 from multiprocessing import Queue
+from dotenv import load_dotenv
 import os
 import time
-import fcntl
 
-address_queue = Queue()
+# Configuration de la connexion Redis
+redis_host = '82.67.116.111'
+redis_port = 6354
+redis_queue_name = 'wallet_addresses'
+
+# Initialiser la connexion Redis
+r = redis.Redis(host=redis_host, port=redis_port, db=0, password = os.getenv('PASSWORD_REDIS_SERVER'))
 
 def process_address(address, logger, connection, cursor):
     file_path = os.path.join(INPUT_FOLDER, f"{address}.csv")
@@ -47,18 +53,20 @@ def main():
     connection, cursor = connection_to_db(logger)
 
     while True:
-        if not address_queue.empty():
-            # Récupérer l'adresse de la queue
-            address_to_process = address_queue.get()
+            # Récupérer une adresse depuis la queue Redis (bloquant si la queue est vide)
+            address_to_process = r.blpop(redis_queue_name)[1].decode('utf-8')
             logger.info(f"Processing address: {address_to_process}")
             process_address(address_to_process, logger, connection, cursor)
-        else:
-            logger.info("No addresses in queue. Waiting for new addresses...")
-            time.sleep(5)
+
+            # Si aucun traitement n'est nécessaire, attendre un moment
+            if not address_to_process:
+                time.sleep(5)
+
 
     #clear_input_folder(INPUT_FOLDER)
     close_sql_connection(logger, connection, cursor)
     logger.info("PnL calculation process completed")
 
 if __name__ == "__main__":
+    load_dotenv()
     main()
