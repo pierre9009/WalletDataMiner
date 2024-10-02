@@ -42,3 +42,13 @@ PROCESS_SCRIPT = './process_wallet.py'
 
 #max transactions à crawl depuis solscan
 MAX_TRANSACTIONS = 3000
+
+#Progesql
+IP_WALLET_DB = "db.pierreminh.com"
+DB_WALLET = "wallet_db"
+USER_WALLET_DB = "pierre"
+
+#Redis
+REDIS_HOST = 'redis.pierreminh.com'
+REDIS_PORT = 6354
+REDIS_QUEUE_NAME = 'wallet_addresses'

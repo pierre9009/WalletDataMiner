@@ -16,7 +16,7 @@ def run_scraper(wallet_addresses, logger):
         settings.set('REQUEST_FINGERPRINTER_IMPLEMENTATION', '2.7')  # Utiliser la version 2.7
 
         settings.set('TELNETCONSOLE_ENABLED', False)  # Désactiver le Telnet console
-        settings.set('LOG_LEVEL', 'ERROR')  # Définir le niveau de log à CRITICAL
+        settings.set('LOG_LEVEL', 'CRITICAL')  # Définir le niveau de log à CRITICAL
         process = CrawlerProcess(settings=settings)
 
         for Wallet_addy in wallet_addresses:

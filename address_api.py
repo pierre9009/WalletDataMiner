@@ -1,3 +1,4 @@
+from config import REDIS_HOST, REDIS_PORT, REDIS_QUEUE_NAME
 from flask import Flask, jsonify
 import subprocess
 import os
@@ -8,13 +9,8 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
 
-# Configuration de la connexion Redis (serveur maître)
-redis_host = '82.67.116.111'  # Remplace par l'IP de ton serveur maître
-redis_port = 6354
-redis_queue_name = 'wallet_addresses'
-
 # Initialiser la connexion Redis
-r = redis.Redis(host=redis_host, port=redis_port, db=0, password=os.getenv('PASSWORD_REDIS_SERVER'))
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, password=os.getenv('PASSWORD_REDIS_SERVER'))
 
 app = Flask(__name__)
 
@@ -68,7 +64,7 @@ def start_processing():
 def get_status():
     """Vérifier l'état du processus et la taille de la queue Redis"""
     is_running = is_process_running("process_wallet.py")
-    queue_size = r.llen(redis_queue_name)
+    queue_size = r.llen(REDIS_QUEUE_NAME)
     
     return jsonify({
         "process_running": is_running,

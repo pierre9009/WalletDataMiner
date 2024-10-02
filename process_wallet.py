@@ -1,4 +1,4 @@
-from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, SOLSCAN_API_URL
+from config import INPUT_FOLDER, OUTPUT_FOLDER, START_DATE, SOLSCAN_API_URL, REDIS_HOST, REDIS_PORT, REDIS_QUEUE_NAME
 from logger import setup_logger
 from price_utils import load_sol_price_cache, save_sol_price_cache, get_sol_price_at_time, get_token_prices
 from pnl_calculation import process_transaction, calculate_unrealized_pnl, calculate_pnl_and_generate_summary
@@ -12,13 +12,9 @@ import time
 import redis
 
 load_dotenv()
-# Configuration de la connexion Redis
-redis_host = '82.67.116.111'
-redis_port = 6354
-redis_queue_name = 'wallet_addresses'
 
 # Initialiser la connexion Redis
-r = redis.Redis(host=redis_host, port=redis_port, db=0, password = os.getenv('PASSWORD_REDIS_SERVER'))
+r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, password = os.getenv('PASSWORD_REDIS_SERVER'))
 
 def process_address(address, logger, connection, cursor):
     file_path = os.path.join(INPUT_FOLDER, f"{address}.csv")
@@ -41,7 +37,6 @@ def process_address(address, logger, connection, cursor):
         logger.info(f"Total Token traded: {metrics['total_token_traded']}")
 
         toDatabase(logger, connection, cursor, address, metrics['gross_profit'], metrics['win_rate'], metrics['total_roi'], metrics['total_volume'], metrics['total_trades'], metrics['total_token_traded'])
-        clear_input_folder(file_path)
         logger.info("--------------------------------------------------------------------------------------")
     else:
         logger.warning(f"File not found for address: {address}")
@@ -58,7 +53,7 @@ def main():
 
     while True:
             # Récupérer une adresse depuis la queue Redis (bloquant si la queue est vide)
-            address_to_process = r.blpop(redis_queue_name)[1].decode('utf-8')
+            address_to_process = r.blpop(REDIS_QUEUE_NAME)[1].decode('utf-8')
             logger.info(f"Processing address: {address_to_process}")
             process_address(address_to_process, logger, connection, cursor)
 
@@ -67,7 +62,7 @@ def main():
                 time.sleep(5)
 
 
-    #clear_input_folder(INPUT_FOLDER)
+    clear_input_folder(INPUT_FOLDER)
     close_sql_connection(logger, connection, cursor)
     logger.info("PnL calculation process completed")
 
