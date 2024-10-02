@@ -3,6 +3,7 @@ import subprocess
 import os
 import redis
 import psutil  # Utilisé pour vérifier si le processus est en cours d'exécution
+from dotenv import load_dotenv
 
 # Configuration de la connexion Redis (serveur maître)
 redis_host = '82.67.116.111'  # Remplace par l'IP de ton serveur maître
@@ -23,16 +24,20 @@ def is_process_running(process_name):
 
 @app.route('/start_processing', methods=['POST'])
 def start_processing():
-    process_script = 'process_wallet.py'  # Nom du script de traitement
-    
+    process_script = './process_wallet.py'  # Nom du script de traitement
+    log_file = './process_wallet.log'  # Fichier de log où écrire les logs du processus
+
     if is_process_running("python3"):  # Vérifier si le processus est déjà en cours
         return jsonify({"status": "running", "message": "process_wallet.py is already running"})
     
     if os.path.exists(process_script):
         try:
-            # Lancer process_wallet.py en arrière-plan
-            subprocess.Popen(['python3', process_script])
-            return jsonify({"status": "started", "message": "process_wallet.py launched"})
+            # Ouvrir un fichier pour rediriger les logs
+            with open(log_file, 'a') as f:
+                # Lancer process_wallet.py en arrière-plan, et rediriger stdout et stderr vers le fichier de log
+                subprocess.Popen(['python3', process_script], stdout=f, stderr=f)
+            
+            return jsonify({"status": "started", "message": f"process_wallet.py launched, logs in {log_file}"})
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)})
     else:
@@ -50,4 +55,5 @@ def get_status():
     })
 
 if __name__ == '__main__':
+    load_dotenv()
     app.run(host='0.0.0.0', port=5000)

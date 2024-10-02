@@ -37,7 +37,6 @@ if __name__ == "__main__":
     check_status()
     time.sleep(2)
 
-    print("\nDémarrage du processus de traitement:")
     start_processing()
     time.sleep(2)
 
