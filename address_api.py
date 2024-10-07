@@ -30,9 +30,14 @@ def stop_all_processes(process_name):
         try:
             # Vérifier si c'est un processus Python et si le script correspond
             if proc.info['name'] == 'python3' and len(proc.info['cmdline']) > 1 and process_name in proc.info['cmdline'][1]:
-                print(f"Arrêt du processus PID {proc.info['pid']} exécutant {proc.info['cmdline'][1]}")
-                proc.terminate()  # Terminer le processus
-                stopped_processes.append(proc.info['pid'])  # Enregistrer le PID du processus terminé
+                print(f"Tentative d'arrêt du processus PID {proc.info['pid']} exécutant {proc.info['cmdline'][1]}")
+                proc.terminate()  # Tentative de terminaison douce
+                try:
+                    proc.wait(timeout=3)  # Attendre jusqu'à 3 secondes que le processus se termine
+                except psutil.TimeoutExpired:
+                    print(f"Le processus {proc.info['pid']} n'a pas pu être terminé, tentative d'arrêt forcé")
+                    proc.kill()  # Forcer l'arrêt si le processus ne répond pas
+                stopped_processes.append(proc.info['pid'])  # Enregistrer le PID du processus arrêté
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass  # Ignorer les erreurs pour les processus qui ne sont plus disponibles
     
