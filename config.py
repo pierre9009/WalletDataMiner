@@ -43,7 +43,7 @@ PROCESS_SCRIPT = './process_wallet.py'
 #max transactions à crawl depuis solscan
 MAX_TRANSACTIONS = 3000
 
-#Progesql
+#Progesql (port 5432)
 IP_WALLET_DB = "db.pierreminh.com"
 DB_WALLET = "wallet_db"
 USER_WALLET_DB = "pierre"

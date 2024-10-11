@@ -10,3 +10,4 @@ watchdog
 flask
 redis
 psutil
+scrapy-cloudflare-middleware
