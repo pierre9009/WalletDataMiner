@@ -1,6 +1,7 @@
 import psycopg2
 from dotenv import load_dotenv
 from config import IP_WALLET_DB, DB_WALLET, USER_WALLET_DB
+import numpy as np
 import os
 
 load_dotenv()
@@ -26,6 +27,14 @@ def connection_to_db(logger):
 # Connexion à la base de données PostgreSQL
 def toDatabase(logger, connection, cursor, address, gross_profit, win_rate, total_roi, volume, total_traded, total_token_traded):
     try:
+        # Convertir les types NumPy en types Python natifs
+        gross_profit = float(gross_profit) if isinstance(gross_profit, np.generic) else gross_profit
+        win_rate = float(win_rate) if isinstance(win_rate, np.generic) else win_rate
+        total_roi = float(total_roi) if isinstance(total_roi, np.generic) else total_roi
+        volume = float(volume) if isinstance(volume, np.generic) else volume
+        total_traded = float(total_traded) if isinstance(total_traded, np.generic) else total_traded
+        total_token_traded = float(total_token_traded) if isinstance(total_token_traded, np.generic) else total_token_traded
+
         upsert_query = """
         INSERT INTO wallet_stats (address, gross_profit, win_rate, total_roi, volume, total_traded, total_token_traded)
         VALUES (%s, %s, %s, %s, %s, %s, %s)

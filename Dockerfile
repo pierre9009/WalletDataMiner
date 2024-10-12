@@ -9,6 +9,12 @@ COPY . /app
 
 # Installer les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install urllib3==1.26.5
+RUN pip install --upgrade cfscrape
+RUN pip install --upgrade scrapy
+RUN pip install --upgrade scrapy_cloudflare_middleware
+
+
 
 # Définir la commande à exécuter lors du démarrage du conteneur
 CMD ["python", "process_wallet.py"]
