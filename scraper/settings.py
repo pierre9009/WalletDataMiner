@@ -14,6 +14,7 @@ NEWSPIDER_MODULE = "scraper.spiders"
 
 DOWNLOADER_MIDDLEWARES = {
     "scraper.middlewares.WalletApiDownloaderMiddleware": 543,
+    'scraper.middlewares.HttpErrorMiddleware': 543,
     "scrapy_cloudflare_middleware.middlewares.CloudFlareMiddleware": 560,
 }
 

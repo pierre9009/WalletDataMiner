@@ -7,6 +7,8 @@ from scrapy import signals
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
+import logging
+from scrapy.http import HtmlResponse
 
 
 class WalletApiSpiderMiddleware:
@@ -101,3 +103,20 @@ class WalletApiDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+class HttpErrorMiddleware:
+    @classmethod
+    def from_crawler(cls, crawler):
+        # Initialize the middleware from the Scrapy crawler
+        return cls()
+
+    def process_response(self, request, response, spider):
+        # Intercepter les réponses HTTP avec des erreurs
+        if response.status >= 400:
+            # Loguer les erreurs HTTP comme WARNING ou ERROR
+            if response.status >= 500:
+                spider.logger.error(f"Server error {response.status} at {response.url}")
+            elif response.status >= 400:
+                spider.logger.error(f"Client error {response.status} at {response.url}")
+        
+        # Retourner la réponse pour continuer le traitement normal
+        return response
